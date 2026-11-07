@@ -26,7 +26,10 @@ async def scrape():
     async with async_playwright() as p:
         b = await p.chromium.launch()
         pg = await b.new_page()
-        await pg.goto(URL, wait_until="networkidle", timeout=120000)
+        await pg.goto(URL, wait_until="domcontentloaded", timeout=180000)
+        print("titulo:", await pg.title(), flush=True)
+        await pg.wait_for_selector("#outerForm\\:selectAmbience", timeout=180000)
+        await pg.wait_for_timeout(3000)
         opts = await pg.eval_on_selector_all("#outerForm\\:selectAmbience option", "os=>os.filter(o=>o.value).map(o=>[o.value,o.text])")
         data = []
         for val, name in opts:
