@@ -1,0 +1,39 @@
+name: Copiar acervo da vistoria
+on:
+  workflow_dispatch:
+  push:
+    paths: ['tools/acervo.py', '.github/workflows/acervo.yml']
+permissions:
+  contents: write
+concurrency: acervo
+jobs:
+  copiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Dependências
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -q playwright pillow requests
+          python -m playwright install --with-deps chromium
+      - name: Copiar fotos e vídeos
+        env: { DATA_COPIA: '' }
+        run: |
+          export DATA_COPIA="$(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+          python tools/acervo.py
+          du -sh laudo-fotos
+      - name: Publicar no repositório
+        run: |
+          git config user.name "Mateus Paiva"
+          git config user.email "mateusxpaiva@users.noreply.github.com"
+          git add laudo-fotos
+          git commit -m "Acervo integral da vistoria da administradora (fotos e vídeos)" || echo "sem mudanças"
+          git pull --rebase -q origin main && git push -q origin HEAD:main
+      - name: Guardar originais em Release
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          gh release delete acervo-originais -y --cleanup-tag 2>/dev/null || true
+          gh release create acervo-originais /tmp/*.zip laudo-fotos/acervo.json --title "Acervo original da vistoria de entrada (28/10/2026)" --notes "Arquivos originais baixados do link público da MSYS Vistorias citado no laudo. Hashes SHA-256 em acervo.json."
