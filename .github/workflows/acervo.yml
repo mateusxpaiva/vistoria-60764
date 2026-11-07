@@ -1,8 +1,6 @@
 name: Copiar acervo da vistoria
 on:
   workflow_dispatch:
-  push:
-    paths: ['tools/acervo.py', '.github/workflows/acervo.yml']
 permissions:
   contents: write
 concurrency: acervo
